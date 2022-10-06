@@ -9,10 +9,30 @@ function App() {
   const [type, setType] = useState("restaurants");
   const [isLoading, setLoading] = useState(false);
   const [places, setPlaces] = useState([]);
+  const [coords, setCoords] = useState({});
   const [childClicked, setChildClicked] = useState(null);
+  //I will pass the setBounds as a prop to the map, so when map gets loaded then I will get the north east ans south west location, because in map component I am using the googlemap
+  const [bounds, setBounds] = useState(null);
   useEffect(() => {
-    getPlacesData(type);
-  }, [type]);
+    if (bounds) {
+      setLoading(true);
+      getPlacesData(type, bounds.ne, bounds.sw).then((data) => {
+        setPlaces(data.filter((place) => place.name && place.num_reviews > 0));
+        setLoading(false);
+      });
+    }
+  }, [type, setPlaces, bounds]);
+  //here this hook is used to get the live loaction from gps
+  useEffect(() => {
+    navigator.geolocation.getCurrentPosition(
+      ({ coords: { latitude, longitude } }) => {
+        setCoords({
+          lat: latitude,
+          lng: longitude,
+        });
+      }
+    );
+  }, []);
   return (
     <div>
       {/* Cssbaseline is used to remove the margin and the padding */}
@@ -28,6 +48,7 @@ function App() {
             setType={(type) => {
               setType(type);
             }}
+            //here this child clicked line is very important otherwise we will not get the data about which child is clicked, because we will access it in the list component
             childClicked={childClicked}
             isLoading={isLoading}
             places={places}
@@ -35,7 +56,19 @@ function App() {
         </Grid>
         {/* this grid is used for the map */}
         <Grid xs={12} md={8}>
-          <Map />
+          <Map
+            coords={coords}
+            places={places}
+            setBounds={(bounds) => {
+              setBounds(bounds);
+            }}
+            setCoords={(coordinates) => {
+              setCoords(coordinates);
+            }}
+            setChildClicked={(child) => {
+              setChildClicked(child);
+            }}
+          />
         </Grid>
       </Grid>
     </div>
